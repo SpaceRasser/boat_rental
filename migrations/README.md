@@ -8,8 +8,8 @@
 - `002_create_owners_table.sql` - Таблица арендодателей (отдельная таблица для совместимости)
 - `003_create_boats_table.sql` - Таблица лодок/услуг
 - `004_create_products_table.sql` - Таблица товаров/оборудования
-- `005_create_boat_orders_table.sql` - Таблица заказов лодок
-- `006_create_bookings_table.sql` - Таблица бронирований
+- `005_create_bookings_table.sql` - Таблица заказов/бронирований
+- `006_create_booking_items_table.sql` - Таблица товаров в заказах
 - `007_create_payments_table.sql` - Таблица платежей
 
 ## Выполнение миграций
@@ -52,8 +52,8 @@ mysql -u root -p boat_rental_system < migrations/002_create_owners_table.sql
 2. `002_create_owners_table.sql` - таблица арендодателей
 3. `003_create_boats_table.sql` - ссылается на owners
 4. `004_create_products_table.sql` - независимая таблица
-5. `005_create_boat_orders_table.sql` - ссылается на boats и products
-6. `006_create_bookings_table.sql` - ссылается на users и owners
+5. `005_create_bookings_table.sql` - ссылается на users и boats
+6. `006_create_booking_items_table.sql` - ссылается на bookings и products
 7. `007_create_payments_table.sql` - ссылается на bookings и users
 
 ## Проверка выполнения
@@ -69,8 +69,8 @@ SHOW TABLES;
 - owners
 - boats
 - products
-- boat_orders
 - bookings
+- booking_items
 - payments
 
 ## Откат миграций
@@ -79,8 +79,8 @@ SHOW TABLES;
 
 ```sql
 DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS booking_items;
 DROP TABLE IF EXISTS bookings;
-DROP TABLE IF EXISTS boat_orders;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS boats;
 DROP TABLE IF EXISTS owners;

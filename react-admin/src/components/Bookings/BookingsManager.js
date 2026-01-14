@@ -13,10 +13,10 @@ const BookingsManager = () => {
   
   // Данные для форм
   const [users, setUsers] = useState([]);
-  const [owners, setOwners] = useState([]);
+  const [boats, setBoats] = useState([]);
   const [formData, setFormData] = useState({
     user_id: '',
-    owner_id: '',
+    boat_id: '',
     start_time: '09:00',
     end_time: '18:00',
     booking_date: new Date().toISOString().split('T')[0],
@@ -56,34 +56,34 @@ const BookingsManager = () => {
     }
   };
 
-  const fetchUsersAndOwners = async () => {
+  const fetchUsersAndBoats = async () => {
     try {
       // Загружаем пользователей
       const usersResponse = await fetch('http://localhost/boat_rental/api/users/get.php');
       const usersData = await usersResponse.json();
       
-      // Загружаем владельцев - создадим простой API если его нет
-      let ownersData;
+      // Загружаем лодки - создадим простой API если его нет
+      let boatsData;
       try {
-        const ownersResponse = await fetch('http://localhost/boat_rental/api/owners/get.php');
-        ownersData = await ownersResponse.json();
+        const boatsResponse = await fetch('http://localhost/boat_rental/api/boats/get.php');
+        boatsData = await boatsResponse.json();
       } catch (error) {
-        console.log('Нет API владельцев, используем заглушку');
-        // Если нет API владельцев, используем тестовые данные
-        ownersData = {
+        console.log('Нет API лодок, используем заглушку');
+        // Если нет API лодок, используем тестовые данные
+        boatsData = {
           success: true,
           data: {
-            owners: [
-              { id_owner: 1, name: "Владелец 1", email: "owner1@example.com" },
-              { id_owner: 2, name: "Владелец 2", email: "owner2@example.com" },
-              { id_owner: 3, name: "Владелец 3", email: "owner3@example.com" }
+            boats: [
+              { id_boat: 1, name: "Лодка 1" },
+              { id_boat: 2, name: "Лодка 2" },
+              { id_boat: 3, name: "Лодка 3" }
             ]
           }
         };
       }
       
       console.log('usersData:', usersData);
-      console.log('ownersData:', ownersData);
+      console.log('boatsData:', boatsData);
       
       // Установка пользователей
       if (usersData.success && usersData.data && usersData.data.users) {
@@ -101,39 +101,39 @@ const BookingsManager = () => {
         ]);
       }
       
-      // Установка владельцев
-      if (ownersData.success && ownersData.data && ownersData.data.owners) {
-        setOwners(ownersData.data.owners);
-      } else if (ownersData.success && ownersData.data && Array.isArray(ownersData.data)) {
-        setOwners(ownersData.data);
-      } else if (Array.isArray(ownersData)) {
-        setOwners(ownersData);
+      // Установка лодок
+      if (boatsData.success && boatsData.data && boatsData.data.boats) {
+        setBoats(boatsData.data.boats);
+      } else if (boatsData.success && boatsData.data && Array.isArray(boatsData.data)) {
+        setBoats(boatsData.data);
+      } else if (Array.isArray(boatsData)) {
+        setBoats(boatsData);
       } else {
-        console.warn('Неверный формат данных владельцев, используем тестовые');
-        setOwners([
-          { id_owner: 1, name: "Алексей Владелец", email: "owner1@example.com" },
-          { id_owner: 2, name: "Дмитрий Арендодатель", email: "owner2@example.com" },
-          { id_owner: 3, name: "Ольга Собственник", email: "owner3@example.com" }
+        console.warn('Неверный формат данных лодок, используем тестовые');
+        setBoats([
+          { id_boat: 1, name: "Лодка 1" },
+          { id_boat: 2, name: "Лодка 2" },
+          { id_boat: 3, name: "Лодка 3" }
         ]);
       }
       
     } catch (error) {
-      console.error('Ошибка загрузки пользователей или владельцев:', error);
+      console.error('Ошибка загрузки пользователей или лодок:', error);
       // Устанавливаем тестовые данные при ошибке
       setUsers([
         { id_user: 1, name: "Иван Иванов", email: "ivan@example.com" },
         { id_user: 2, name: "Петр Петров", email: "petr@example.com" }
       ]);
-      setOwners([
-        { id_owner: 1, name: "Алексей Владелец", email: "owner1@example.com" },
-        { id_owner: 2, name: "Дмитрий Арендодатель", email: "owner2@example.com" }
+      setBoats([
+        { id_boat: 1, name: "Лодка 1" },
+        { id_boat: 2, name: "Лодка 2" }
       ]);
     }
   };
 
   useEffect(() => {
     fetchBookings();
-    fetchUsersAndOwners();
+    fetchUsersAndBoats();
   }, []);
 
   // ========== УВЕДОМЛЕНИЯ ==========
@@ -173,13 +173,8 @@ const BookingsManager = () => {
     console.log('Отправка данных:', formData);
     
     // Валидация
-    if (!formData.user_id || !formData.owner_id) {
-      showNotification('Выберите клиента и владельца', 'error');
-      return;
-    }
-
-    if (formData.user_id === formData.owner_id) {
-      showNotification('Клиент и владелец не могут быть одним человеком', 'error');
+    if (!formData.user_id || !formData.boat_id) {
+      showNotification('Выберите клиента и лодку', 'error');
       return;
     }
 
@@ -206,7 +201,7 @@ const BookingsManager = () => {
         },
         body: JSON.stringify({
           user_id: parseInt(formData.user_id),
-          owner_id: parseInt(formData.owner_id),
+          boat_id: parseInt(formData.boat_id),
           start_time: formData.start_time,
           end_time: formData.end_time,
           booking_date: formData.booking_date,
@@ -245,7 +240,7 @@ const BookingsManager = () => {
     setSelectedBooking(booking);
     setFormData({
       user_id: booking.user_id || '',
-      owner_id: booking.owner_id || '',
+      boat_id: booking.boat_id || '',
       start_time: booking.start_time || '09:00',
       end_time: booking.end_time || '18:00',
       booking_date: booking.booking_date ? 
@@ -259,13 +254,8 @@ const BookingsManager = () => {
   const handleUpdateBooking = async (e) => {
     e.preventDefault();
     
-    if (!formData.user_id || !formData.owner_id) {
-      showNotification('Выберите клиента и владельца', 'error');
-      return;
-    }
-
-    if (formData.user_id === formData.owner_id) {
-      showNotification('Клиент и владелец не могут быть одним человеком', 'error');
+    if (!formData.user_id || !formData.boat_id) {
+      showNotification('Выберите клиента и лодку', 'error');
       return;
     }
 
@@ -358,7 +348,7 @@ const BookingsManager = () => {
   const resetForm = () => {
     setFormData({
       user_id: '',
-      owner_id: '',
+      boat_id: '',
       start_time: '09:00',
       end_time: '18:00',
       booking_date: new Date().toISOString().split('T')[0],
@@ -371,6 +361,7 @@ const BookingsManager = () => {
     const matchesSearch = 
       (booking.user_name && booking.user_name.toLowerCase().includes(search.toLowerCase())) ||
       (booking.owner_name && booking.owner_name.toLowerCase().includes(search.toLowerCase())) ||
+      (booking.boat_name && booking.boat_name.toLowerCase().includes(search.toLowerCase())) ||
       (booking.user_email && booking.user_email.toLowerCase().includes(search.toLowerCase())) ||
       booking.id_booking.toString().includes(search) ||
       (booking.booking_date && booking.booking_date.includes(search));
@@ -423,7 +414,7 @@ const BookingsManager = () => {
         <button 
           className="btn-add-booking"
           onClick={() => {
-            console.log('Открытие формы, users:', users.length, 'owners:', owners.length);
+            console.log('Открытие формы, users:', users.length, 'boats:', boats.length);
             resetForm();
             setShowAddForm(true);
           }}
@@ -689,28 +680,28 @@ const BookingsManager = () => {
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="owner_id">Владелец *</label>
+                      <label htmlFor="boat_id">Лодка *</label>
                     <select
-                      id="owner_id"
-                      value={formData.owner_id}
+                      id="boat_id"
+                      value={formData.boat_id}
                       onChange={(e) => {
-                        console.log('Выбран owner_id:', e.target.value);
-                        setFormData({...formData, owner_id: e.target.value});
+                        console.log('Выбран boat_id:', e.target.value);
+                        setFormData({...formData, boat_id: e.target.value});
                       }}
                       required
                     >
-                      <option value="">Выберите владельца</option>
-                      {Array.isArray(owners) && owners.length > 0 ? (
-                        owners.map(owner => (
+                      <option value="">Выберите лодку</option>
+                      {Array.isArray(boats) && boats.length > 0 ? (
+                        boats.map(boat => (
                           <option 
-                            key={owner.id_owner || owner.id} 
-                            value={owner.id_owner || owner.id}
+                            key={boat.id_boat || boat.id} 
+                            value={boat.id_boat || boat.id}
                           >
-                            {owner.name} ({owner.email})
+                            {boat.name}
                           </option>
                         ))
                       ) : (
-                        <option disabled>Загрузка владельцев...</option>
+                        <option disabled>Загрузка лодок...</option>
                       )}
                     </select>
                   </div>
@@ -862,25 +853,25 @@ const BookingsManager = () => {
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="edit_owner_id">Владелец *</label>
+                    <label htmlFor="edit_boat_id">Лодка *</label>
                     <select
-                      id="edit_owner_id"
-                      value={formData.owner_id}
-                      onChange={(e) => setFormData({...formData, owner_id: e.target.value})}
+                      id="edit_boat_id"
+                      value={formData.boat_id}
+                      onChange={(e) => setFormData({...formData, boat_id: e.target.value})}
                       required
                     >
-                      <option value="">Выберите владельца</option>
-                      {Array.isArray(owners) && owners.length > 0 ? (
-                        owners.map(owner => (
+                      <option value="">Выберите лодку</option>
+                      {Array.isArray(boats) && boats.length > 0 ? (
+                        boats.map(boat => (
                           <option 
-                            key={owner.id_owner || owner.id} 
-                            value={owner.id_owner || owner.id}
+                            key={boat.id_boat || boat.id} 
+                            value={boat.id_boat || boat.id}
                           >
-                            {owner.name} ({owner.email})
+                            {boat.name}
                           </option>
                         ))
                       ) : (
-                        <option disabled>Загрузка владельцев...</option>
+                        <option disabled>Загрузка лодок...</option>
                       )}
                     </select>
                   </div>

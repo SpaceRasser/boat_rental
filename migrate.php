@@ -31,8 +31,8 @@ try {
         'migrations/002_create_owners_table.sql',
         'migrations/003_create_boats_table.sql',
         'migrations/004_create_products_table.sql',
-        'migrations/005_create_boat_orders_table.sql',
-        'migrations/006_create_bookings_table.sql',
+        'migrations/005_create_bookings_table.sql',
+        'migrations/006_create_booking_items_table.sql',
         'migrations/007_create_payments_table.sql'
     ];
     
