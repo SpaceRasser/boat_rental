@@ -4,7 +4,7 @@ require_once '../config.php';
 try {
     $conn = getConnection();
 
-    $stmt = $conn->prepare("SELECT
+    $selectSql = "SELECT
             b.id_booking,
             b.user_id,
             u.name as user_name,
@@ -24,9 +24,22 @@ try {
         LEFT JOIN users u ON b.user_id = u.id_user
         LEFT JOIN boats bt ON b.boat_id = bt.id_boat
         LEFT JOIN owners o ON bt.owner_id = o.id_owner
-        ORDER BY b.booking_date DESC, b.start_time ASC
-    ");
-    $stmt->execute();
+        ORDER BY b.booking_date DESC, b.start_time ASC";
+
+    $stmt = $conn->prepare($selectSql);
+
+    try {
+        $stmt->execute();
+    } catch (PDOException $e) {
+        if (strpos($e->getMessage(), 'boat_id') !== false) {
+            $dbname = getenv('DB_NAME') ?: 'boat_rental_system';
+            ensureBookingsSchema($conn, $dbname);
+            $stmt = $conn->prepare($selectSql);
+            $stmt->execute();
+        } else {
+            throw $e;
+        }
+    }
     $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $bookingIds = array_column($bookings, 'id_booking');

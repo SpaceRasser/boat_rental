@@ -89,16 +89,13 @@ const ClientProfile = ({ user, onUpdate }) => {
     
     if (!bookingDate || !startTime || !endTime) return;
 
-    // Для упрощения используем owner_id = 1, в реальном приложении нужно получать из boat
-    const ownerId = 1;
-
     try {
       const response = await fetch(`${API_BASE_URL}/booking/create.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: user.id_user,
-          owner_id: ownerId,
+          boat_id: boatId,
           booking_date: bookingDate,
           start_time: startTime,
           end_time: endTime
