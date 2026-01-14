@@ -83,8 +83,8 @@
    - owners
    - boats
    - products
-   - boat_orders
    - bookings
+   - booking_items
    - payments
 
 2. **Попробуйте добавить услугу снова** - должно работать!
