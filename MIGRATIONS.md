@@ -10,8 +10,8 @@ migrations/
 ├── 002_create_owners_table.sql    - Арендодатели
 ├── 003_create_boats_table.sql      - Лодки
 ├── 004_create_products_table.sql   - Товары
-├── 005_create_boat_orders_table.sql - Заказы
-├── 006_create_bookings_table.sql   - Бронирования
+├── 005_create_bookings_table.sql   - Заказы/бронирования
+├── 006_create_booking_items_table.sql - Товары в заказах
 └── 007_create_payments_table.sql   - Платежи
 ```
 
@@ -78,8 +78,8 @@ SHOW TABLES;
 - owners
 - boats
 - products
-- boat_orders
 - bookings
+- booking_items
 - payments
 
 ## Описание таблиц
@@ -131,30 +131,26 @@ SHOW TABLES;
 - `price_discount` - Цена со скидкой
 - `created_at` - Дата создания
 
-### boat_orders
-Заказы лодок
-- `id_order` - ID заказа
-- `boat_id` - ID лодки (FK)
-- `product_id` - ID товара (FK, опционально)
-- `status` - Статус заказа
-- `available` - Доступность
-- `available_days` - Доступные дни
-- `available_time_start` - Время начала
-- `available_time_end` - Время окончания
-- `quantity` - Количество
-- `price` - Цена
-- `price_discount` - Цена со скидкой
-- `created_at` - Дата создания
-
 ### bookings
-Бронирования
+Заказы/бронирования
 - `id_booking` - ID бронирования
 - `user_id` - ID пользователя (FK)
-- `owner_id` - ID арендодателя (FK)
+- `boat_id` - ID лодки (FK)
 - `start_time` - Время начала
 - `end_time` - Время окончания
 - `booking_date` - Дата бронирования
 - `status` - Статус бронирования
+- `amount` - Сумма заказа
+- `created_at` - Дата создания
+
+### booking_items
+Товары заказа
+- `id_booking_item` - ID позиции заказа
+- `booking_id` - ID бронирования (FK)
+- `product_id` - ID товара (FK, опционально)
+- `quantity` - Количество
+- `price` - Базовая цена
+- `price_discount` - Цена со скидкой
 - `created_at` - Дата создания
 
 ### payments
@@ -175,8 +171,8 @@ SHOW TABLES;
 
 ```sql
 DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS booking_items;
 DROP TABLE IF EXISTS bookings;
-DROP TABLE IF EXISTS boat_orders;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS boats;
 DROP TABLE IF EXISTS owners;

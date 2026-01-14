@@ -13,104 +13,165 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-// Валидация
-if (empty($data['boat_id']) || empty($data['price'])) {
-    sendError('Missing required fields: boat_id, price');
+$required = ['user_id', 'boat_id', 'start_time', 'end_time', 'booking_date'];
+foreach ($required as $field) {
+    if (empty($data[$field])) {
+        sendError("Missing required field: $field");
+    }
 }
+
+$conn = null;
 
 try {
     $conn = getConnection();
-    
-    // Проверяем существование лодки
-    $boatStmt = $conn->prepare("SELECT id_boat FROM boats WHERE id_boat = :boat_id");
-    $boatStmt->bindParam(':boat_id', $data['boat_id'], PDO::PARAM_INT);
-    $boatStmt->execute();
-    
-    if (!$boatStmt->fetch()) {
+    $conn->beginTransaction();
+
+    $user_id = intval($data['user_id']);
+    $boat_id = intval($data['boat_id']);
+    $start_time = $data['start_time'];
+    $end_time = $data['end_time'];
+    $booking_date = $data['booking_date'];
+    $status = isset($data['status']) ? trim($data['status']) : 'ожидание';
+
+    $userStmt = $conn->prepare("SELECT id_user FROM users WHERE id_user = ?");
+    $userStmt->execute([$user_id]);
+    if (!$userStmt->fetch()) {
+        $conn->rollBack();
+        sendError('User not found', 404);
+    }
+
+    $boatStmt = $conn->prepare("SELECT id_boat, price, price_discount FROM boats WHERE id_boat = ?");
+    $boatStmt->execute([$boat_id]);
+    $boat = $boatStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$boat) {
+        $conn->rollBack();
         sendError('Boat not found', 404);
     }
-    
-    // Проверяем существование товара (если указан)
-    if (!empty($data['product_id'])) {
-        $productStmt = $conn->prepare("SELECT id_product FROM products WHERE id_product = :product_id");
-        $productStmt->bindParam(':product_id', $data['product_id'], PDO::PARAM_INT);
-        $productStmt->execute();
-        
-        if (!$productStmt->fetch()) {
+
+    $checkSql = "SELECT id_booking FROM bookings
+                 WHERE boat_id = ?
+                 AND booking_date = ?
+                 AND status NOT IN ('отменена', 'завершена')
+                 AND (
+                    (? BETWEEN start_time AND end_time) OR
+                    (? BETWEEN start_time AND end_time) OR
+                    (start_time BETWEEN ? AND ?)
+                 )";
+
+    $checkStmt = $conn->prepare($checkSql);
+    $checkStmt->execute([$boat_id, $booking_date, $start_time, $end_time, $start_time, $end_time]);
+
+    if ($checkStmt->fetch()) {
+        $conn->rollBack();
+        sendError('Это время уже занято');
+    }
+
+    $items = isset($data['items']) && is_array($data['items']) ? $data['items'] : [];
+    $itemsTotal = 0;
+    $preparedItems = [];
+
+    foreach ($items as $item) {
+        if (empty($item['product_id'])) {
+            $conn->rollBack();
+            sendError('Каждый товар должен содержать product_id');
+        }
+
+        $productId = intval($item['product_id']);
+        $quantity = isset($item['quantity']) ? max(1, intval($item['quantity'])) : 1;
+
+        $productStmt = $conn->prepare("SELECT id_product, price, price_discount FROM products WHERE id_product = ?");
+        $productStmt->execute([$productId]);
+        $product = $productStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$product) {
+            $conn->rollBack();
             sendError('Product not found', 404);
         }
+
+        $price = isset($item['price']) ? floatval($item['price']) : floatval($product['price']);
+        $priceDiscount = array_key_exists('price_discount', $item)
+            ? ($item['price_discount'] !== null ? floatval($item['price_discount']) : null)
+            : ($product['price_discount'] !== null ? floatval($product['price_discount']) : null);
+
+        $finalPrice = $priceDiscount !== null ? $priceDiscount : $price;
+        $itemsTotal += $finalPrice * $quantity;
+
+        $preparedItems[] = [
+            'product_id' => $productId,
+            'quantity' => $quantity,
+            'price' => $price,
+            'price_discount' => $priceDiscount
+        ];
     }
-    
-    // Вставляем данные
-    $stmt = $conn->prepare("
-        INSERT INTO boat_orders (
-            boat_id, product_id, status, available, available_days,
-            available_time_start, available_time_end, quantity, price, price_discount
-        ) VALUES (
-            :boat_id, :product_id, :status, :available, :available_days,
-            :available_time_start, :available_time_end, :quantity, :price, :price_discount
-        )
-    ");
-    
-    // Подготавливаем данные
-    $boat_id = intval($data['boat_id']);
-    $product_id = !empty($data['product_id']) ? intval($data['product_id']) : null;
-    $status = isset($data['status']) ? trim($data['status']) : 'ожидание';
-    $available = isset($data['available']) ? (bool)$data['available'] : true;
-    $available_days = isset($data['available_days']) ? trim($data['available_days']) : 'Понедельник,Вторник,Среда,Четверг,Пятница,Суббота,Воскресенье';
-    $available_time_start = isset($data['available_time_start']) ? trim($data['available_time_start']) : '09:00';
-    $available_time_end = isset($data['available_time_end']) ? trim($data['available_time_end']) : '18:00';
-    $quantity = isset($data['quantity']) ? intval($data['quantity']) : 1;
-    $price = floatval($data['price']);
-    $price_discount = isset($data['price_discount']) ? floatval($data['price_discount']) : null;
-    
-    // Биндим параметры
-    $stmt->bindParam(':boat_id', $boat_id, PDO::PARAM_INT);
-    $stmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
-    $stmt->bindParam(':status', $status, PDO::PARAM_STR);
-    $stmt->bindParam(':available', $available, PDO::PARAM_BOOL);
-    $stmt->bindParam(':available_days', $available_days, PDO::PARAM_STR);
-    $stmt->bindParam(':available_time_start', $available_time_start, PDO::PARAM_STR);
-    $stmt->bindParam(':available_time_end', $available_time_end, PDO::PARAM_STR);
-    $stmt->bindParam(':quantity', $quantity, PDO::PARAM_INT);
-    $stmt->bindParam(':price', $price);
-    $stmt->bindParam(':price_discount', $price_discount);
-    
-    if ($stmt->execute()) {
-        $orderId = $conn->lastInsertId();
-        
-        // Получаем созданный заказ с информацией о лодке и товаре
-        $orderStmt = $conn->prepare("
-            SELECT 
-                o.id_order,
-                o.boat_id,
-                b.name as boat_name,
-                o.product_id,
-                p.name as product_name,
-                o.status,
-                o.available,
-                o.available_days,
-                TIME_FORMAT(o.available_time_start, '%H:%i') as available_time_start,
-                TIME_FORMAT(o.available_time_end, '%H:%i') as available_time_end,
-                o.quantity,
-                o.price,
-                o.price_discount,
-                DATE_FORMAT(o.created_at, '%d.%m.%Y %H:%i') as created_at
-            FROM boat_orders o
-            LEFT JOIN boats b ON o.boat_id = b.id_boat
-            LEFT JOIN products p ON o.product_id = p.id_product
-            WHERE o.id_order = :id
-        ");
-        $orderStmt->bindParam(':id', $orderId, PDO::PARAM_INT);
-        $orderStmt->execute();
-        $order = $orderStmt->fetch(PDO::FETCH_ASSOC);
-        
-        sendResponse($order, 201);
-    } else {
+
+    $baseAmount = $boat['price_discount'] !== null ? floatval($boat['price_discount']) : floatval($boat['price']);
+    $amount = isset($data['amount']) ? floatval($data['amount']) : ($baseAmount + $itemsTotal);
+
+    $stmt = $conn->prepare("INSERT INTO bookings
+            (user_id, boat_id, start_time, end_time, booking_date, status, amount, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+
+    if (!$stmt->execute([$user_id, $boat_id, $start_time, $end_time, $booking_date, $status, $amount])) {
+        $conn->rollBack();
         sendError('Failed to create order');
     }
-    
+
+    $orderId = $conn->lastInsertId();
+
+    if (!empty($preparedItems)) {
+        $itemStmt = $conn->prepare("INSERT INTO booking_items (booking_id, product_id, quantity, price, price_discount, created_at)
+                                    VALUES (?, ?, ?, ?, ?, NOW())");
+        foreach ($preparedItems as $item) {
+            $itemStmt->execute([
+                $orderId,
+                $item['product_id'],
+                $item['quantity'],
+                $item['price'],
+                $item['price_discount']
+            ]);
+        }
+    }
+
+    $conn->commit();
+
+    $orderStmt = $conn->prepare("SELECT
+            b.id_booking as id_order,
+            b.id_booking,
+            b.user_id,
+            u.name as user_name,
+            b.boat_id,
+            bt.name as boat_name,
+            TIME_FORMAT(b.start_time, '%H:%i') as start_time,
+            TIME_FORMAT(b.end_time, '%H:%i') as end_time,
+            DATE_FORMAT(b.booking_date, '%d.%m.%Y') as booking_date,
+            b.status,
+            b.amount,
+            DATE_FORMAT(b.created_at, '%d.%m.%Y %H:%i') as created_at
+        FROM bookings b
+        LEFT JOIN boats bt ON b.boat_id = bt.id_boat
+        LEFT JOIN users u ON b.user_id = u.id_user
+        WHERE b.id_booking = ?");
+    $orderStmt->execute([$orderId]);
+    $order = $orderStmt->fetch(PDO::FETCH_ASSOC);
+
+    $itemsStmt = $conn->prepare("SELECT
+            bi.id_booking_item,
+            bi.product_id,
+            p.name as product_name,
+            bi.quantity,
+            bi.price,
+            bi.price_discount
+        FROM booking_items bi
+        LEFT JOIN products p ON bi.product_id = p.id_product
+        WHERE bi.booking_id = ?");
+    $itemsStmt->execute([$orderId]);
+    $order['items'] = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    sendResponse($order, 201);
+
 } catch(PDOException $e) {
+    if ($conn && $conn->inTransaction()) {
+        $conn->rollBack();
+    }
     sendError('Database error: ' . $e->getMessage(), 500);
 }
 ?>
