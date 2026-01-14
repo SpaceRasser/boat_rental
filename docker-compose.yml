@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # MySQL база данных
+  db:
+    image: mysql:8.0
+    container_name: boat_rental_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: boat_rental_system
+      MYSQL_USER: boat_user
+      MYSQL_PASSWORD: boat_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - boat_network
+
+  # PHP Backend
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile.php
+    container_name: boat_rental_php
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./api:/var/www/html/api
+      - ./index.php:/var/www/html/index.php
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_NAME=boat_rental_system
+      - DB_USER=boat_user
+      - DB_PASSWORD=boat_password
+    networks:
+      - boat_network
+
+  # React Frontend
+  react:
+    build:
+      context: ./react-admin
+      dockerfile: Dockerfile
+    container_name: boat_rental_react
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./react-admin:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - php
+    networks:
+      - boat_network
+
+volumes:
+  mysql_data:
+
+networks:
+  boat_network:
+    driver: bridge
