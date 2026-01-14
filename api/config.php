@@ -63,6 +63,8 @@ function ensureTablesExist($conn, $dbname) {
         $missingTables = array_diff($requiredTables, $existingTables);
         
         if (empty($missingTables)) {
+            ensureBookingsSchema($conn, $dbname);
+            createTableBookingItems($conn);
             $tablesChecked = true;
             return;
         }
@@ -73,6 +75,7 @@ function ensureTablesExist($conn, $dbname) {
         createTableBoats($conn);
         createTableProducts($conn);
         createTableBookings($conn);
+        ensureBookingsSchema($conn, $dbname);
         createTableBookingItems($conn);
         createTablePayments($conn);
         
@@ -169,6 +172,50 @@ function createTableBookings($conn) {
         FOREIGN KEY (boat_id) REFERENCES boats(id_boat) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
     $conn->exec($sql);
+}
+
+function ensureBookingsSchema($conn, $dbname) {
+    $columnsStmt = $conn->prepare("
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = :schema
+          AND TABLE_NAME = 'bookings'
+    ");
+    $columnsStmt->execute([':schema' => $dbname]);
+    $existingColumns = $columnsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (!in_array('boat_id', $existingColumns, true)) {
+        $conn->exec("ALTER TABLE bookings ADD COLUMN boat_id INT NULL");
+    }
+
+    if (!in_array('amount', $existingColumns, true)) {
+        $conn->exec("ALTER TABLE bookings ADD COLUMN amount DECIMAL(10, 2) NOT NULL DEFAULT 0");
+    }
+
+    if (!in_array('booking_date', $existingColumns, true)) {
+        $conn->exec("ALTER TABLE bookings ADD COLUMN booking_date DATE NULL");
+    }
+
+    $indexesStmt = $conn->prepare("
+        SELECT INDEX_NAME
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE TABLE_SCHEMA = :schema
+          AND TABLE_NAME = 'bookings'
+    ");
+    $indexesStmt->execute([':schema' => $dbname]);
+    $existingIndexes = $indexesStmt->fetchAll(PDO::FETCH_COLUMN);
+
+    if (!in_array('idx_boat', $existingIndexes, true)) {
+        $conn->exec("CREATE INDEX idx_boat ON bookings (boat_id)");
+    }
+
+    if (!in_array('idx_date', $existingIndexes, true)) {
+        $conn->exec("CREATE INDEX idx_date ON bookings (booking_date)");
+    }
+
+    if (!in_array('idx_boat_date', $existingIndexes, true)) {
+        $conn->exec("CREATE INDEX idx_boat_date ON bookings (boat_id, booking_date)");
+    }
 }
 
 function createTableBookingItems($conn) {
