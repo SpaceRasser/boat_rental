@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\ServiceProvider;
 
 return [
 
@@ -15,20 +16,12 @@ return [
     'key' => env('APP_KEY'),
     'cipher' => 'AES-256-CBC',
 
-    'providers' => [
-        Illuminate\Validation\ValidationServiceProvider::class,
-        Illuminate\View\ViewServiceProvider::class,
-        Illuminate\Translation\TranslationServiceProvider::class,
-        Illuminate\Database\DatabaseServiceProvider::class,
-        Illuminate\Filesystem\FilesystemServiceProvider::class,
-        Illuminate\Foundation\Providers\FoundationServiceProvider::class,
-        Illuminate\Routing\RoutingServiceProvider::class,
-        Illuminate\Http\HttpServiceProvider::class,
-        Illuminate\Session\SessionServiceProvider::class,
-        
-        // App Service Providers
+
+
+    'providers' => ServiceProvider::defaultProviders()->merge([
         App\Providers\AppServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-    ],
+    ])->toArray(),
+
 
 ];
