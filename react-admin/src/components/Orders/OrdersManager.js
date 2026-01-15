@@ -24,7 +24,10 @@ const OrdersManager = () => {
     available_time_end: '18:00',
     quantity: 1,
     price: '',
-    price_discount: ''
+    price_discount: '',
+    booking_date: new Date().toISOString().split('T')[0],
+    start_time: '09:00',
+    end_time: '18:00'
   });
 
   // Статусы заказов
@@ -125,6 +128,11 @@ const OrdersManager = () => {
       return;
     }
 
+    if (!formData.booking_date || !formData.start_time || !formData.end_time) {
+      showNotification('Укажите дату и время бронирования', 'error');
+      return;
+    }
+
     try {
       const response = await fetch('http://localhost:8080/api/orders/create.php', {
         method: 'POST',
@@ -164,7 +172,10 @@ const OrdersManager = () => {
       available_time_end: order.available_time_end || '18:00',
       quantity: order.quantity || 1,
       price: order.price || '',
-      price_discount: order.price_discount || ''
+      price_discount: order.price_discount || '',
+      booking_date: order.booking_date || new Date().toISOString().split('T')[0],
+      start_time: order.start_time || '09:00',
+      end_time: order.end_time || '18:00'
     });
     setShowEditForm(true);
   };
@@ -267,7 +278,10 @@ const OrdersManager = () => {
       available_time_end: '18:00',
       quantity: 1,
       price: '',
-      price_discount: ''
+      price_discount: '',
+      booking_date: new Date().toISOString().split('T')[0],
+      start_time: '09:00',
+      end_time: '18:00'
     });
   };
 
@@ -483,6 +497,8 @@ const OrdersManager = () => {
                   <th>ID</th>
                   <th>Лодка</th>
                   <th>Товар</th>
+                  <th>Дата брони</th>
+                  <th>Время брони</th>
                   <th>Статус</th>
                   <th>Кол-во</th>
                   <th>Цена</th>
@@ -501,6 +517,12 @@ const OrdersManager = () => {
                     </td>
                     <td className="order-product">
                       {order.product_name ? order.product_name : 'Без товара'}
+                    </td>
+                    <td className="order-booking-date">
+                      {order.booking_date || '—'}
+                    </td>
+                    <td className="order-booking-time">
+                      {order.start_time && order.end_time ? `${order.start_time} – ${order.end_time}` : '—'}
                     </td>
                     <td className="order-status">
                       <select
@@ -533,13 +555,13 @@ const OrdersManager = () => {
                     </td>
                     <td className="order-days">
                       <div className="days-tags">
-                        {order.available_days.split(',').slice(0, 3).map((day, index) => (
+                        {(order.available_days || '').split(',').filter(Boolean).slice(0, 3).map((day, index) => (
                           <span key={index} className="day-tag">
                             {day.trim()}
                           </span>
                         ))}
-                        {order.available_days.split(',').length > 3 && (
-                          <span className="day-tag-more">+{order.available_days.split(',').length - 3}</span>
+                        {(order.available_days || '').split(',').filter(Boolean).length > 3 && (
+                          <span className="day-tag-more">+{(order.available_days || '').split(',').filter(Boolean).length - 3}</span>
                         )}
                       </div>
                     </td>
@@ -682,6 +704,104 @@ const OrdersManager = () => {
                       onChange={(e) => setFormData({...formData, price_discount: e.target.value})}
                       placeholder="0.00"
                     />
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <h3>Данные бронирования</h3>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="booking_date">Дата *</label>
+                    <input
+                      type="date"
+                      id="booking_date"
+                      value={formData.booking_date}
+                      onChange={(e) => setFormData({...formData, booking_date: e.target.value})}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="start_time">Время начала *</label>
+                    <select
+                      id="start_time"
+                      value={formData.start_time}
+                      onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                      required
+                    >
+                      {timeOptions.map(time => (
+                        <option key={`start-${time}`} value={time}>
+                          {time}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="end_time">Время окончания *</label>
+                    <select
+                      id="end_time"
+                      value={formData.end_time}
+                      onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+                      required
+                    >
+                      {timeOptions.map(time => (
+                        <option key={`end-${time}`} value={time}>
+                          {time}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <h3>Данные бронирования</h3>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit_booking_date">Дата *</label>
+                    <input
+                      type="date"
+                      id="edit_booking_date"
+                      value={formData.booking_date}
+                      onChange={(e) => setFormData({...formData, booking_date: e.target.value})}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="edit_start_time">Время начала *</label>
+                    <select
+                      id="edit_start_time"
+                      value={formData.start_time}
+                      onChange={(e) => setFormData({...formData, start_time: e.target.value})}
+                      required
+                    >
+                      {timeOptions.map(time => (
+                        <option key={`start-${time}`} value={time}>
+                          {time}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="edit_end_time">Время окончания *</label>
+                    <select
+                      id="edit_end_time"
+                      value={formData.end_time}
+                      onChange={(e) => setFormData({...formData, end_time: e.target.value})}
+                      required
+                    >
+                      {timeOptions.map(time => (
+                        <option key={`end-${time}`} value={time}>
+                          {time}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>

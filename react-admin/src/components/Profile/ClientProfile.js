@@ -6,6 +6,7 @@ const ClientProfile = ({ user, onUpdate }) => {
   const [activeTab, setActiveTab] = useState('services');
   const [services, setServices] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [formData, setFormData] = useState({
     name: user.name,
@@ -110,9 +111,11 @@ const ClientProfile = ({ user, onUpdate }) => {
         body: JSON.stringify({
           user_id: user.id_user,
           owner_id: boat.owner_id,
+          boat_id: boat.id_boat,
           booking_date: bookingDate,
           start_time: startTime,
-          end_time: endTime
+          end_time: endTime,
+          price: boat.price || null
         })
       });
 
@@ -125,6 +128,35 @@ const ClientProfile = ({ user, onUpdate }) => {
       }
     } catch (error) {
       alert('Ошибка создания бронирования: ' + error.message);
+    }
+  };
+
+  const handlePayment = async (booking) => {
+    setPaymentsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/paymants/create.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id_user,
+          booking_id: booking.id_booking,
+          amount: booking.price || 0,
+          payment_method: 'online-placeholder',
+          status: 'pending',
+          payment_date: new Date().toISOString().split('T')[0]
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Платеж отправлен в тестовый шлюз. Ожидайте подтверждения.');
+      } else {
+        alert('Ошибка оплаты: ' + data.error);
+      }
+    } catch (error) {
+      alert('Ошибка оплаты: ' + error.message);
+    } finally {
+      setPaymentsLoading(false);
     }
   };
 
@@ -190,9 +222,18 @@ const ClientProfile = ({ user, onUpdate }) => {
                 {bookings.map(booking => (
                   <div key={booking.id_booking} className="booking-card">
                     <h3>Бронирование #{booking.id_booking}</h3>
-                    <p>Дата начала: {booking.start_date}</p>
-                    <p>Дата окончания: {booking.end_date}</p>
+                    <p>Лодка: {booking.boat_name || '—'}</p>
+                    <p>Дата: {booking.booking_date}</p>
+                    <p>Время: {booking.start_time} – {booking.end_time}</p>
+                    <p>Цена: {booking.price ? `${booking.price} ₽` : '—'}</p>
                     <p>Статус: {booking.status || 'Активно'}</p>
+                    <button
+                      className="book-button"
+                      onClick={() => handlePayment(booking)}
+                      disabled={paymentsLoading}
+                    >
+                      {paymentsLoading ? 'Оплата...' : 'Оплатить'}
+                    </button>
                   </div>
                 ))}
               </div>
