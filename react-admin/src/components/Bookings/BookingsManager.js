@@ -14,12 +14,18 @@ const BookingsManager = () => {
   // Данные для форм
   const [users, setUsers] = useState([]);
   const [owners, setOwners] = useState([]);
+  const [boats, setBoats] = useState([]);
+  const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
     user_id: '',
     owner_id: '',
+    boat_id: '',
+    product_id: '',
     start_time: '09:00',
     end_time: '18:00',
     booking_date: new Date().toISOString().split('T')[0],
+    quantity: 1,
+    price: '',
     status: 'бронь'
   });
 
@@ -131,9 +137,32 @@ const BookingsManager = () => {
     }
   };
 
+  const fetchBoatsAndProducts = async () => {
+    try {
+      const [boatsResponse, productsResponse] = await Promise.all([
+        fetch('http://localhost:8080/api/boats/get.php'),
+        fetch('http://localhost:8080/api/products/get.php')
+      ]);
+
+      const boatsData = await boatsResponse.json();
+      const productsData = await productsResponse.json();
+
+      if (boatsData.success) {
+        setBoats(boatsData.data.boats || []);
+      }
+
+      if (productsData.success) {
+        setProducts(productsData.data.products || []);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки лодок или товаров:', error);
+    }
+  };
+
   useEffect(() => {
     fetchBookings();
     fetchUsersAndOwners();
+    fetchBoatsAndProducts();
   }, []);
 
   // ========== УВЕДОМЛЕНИЯ ==========
@@ -173,8 +202,8 @@ const BookingsManager = () => {
     console.log('Отправка данных:', formData);
     
     // Валидация
-    if (!formData.user_id || !formData.owner_id) {
-      showNotification('Выберите клиента и владельца', 'error');
+    if (!formData.user_id || !formData.owner_id || !formData.boat_id) {
+      showNotification('Выберите клиента, владельца и лодку', 'error');
       return;
     }
 
@@ -207,9 +236,13 @@ const BookingsManager = () => {
         body: JSON.stringify({
           user_id: parseInt(formData.user_id),
           owner_id: parseInt(formData.owner_id),
+          boat_id: parseInt(formData.boat_id),
+          product_id: formData.product_id ? parseInt(formData.product_id) : null,
           start_time: formData.start_time,
           end_time: formData.end_time,
           booking_date: formData.booking_date,
+          quantity: parseInt(formData.quantity),
+          price: formData.price ? parseFloat(formData.price) : null,
           status: formData.status
         })
       });
@@ -246,11 +279,13 @@ const BookingsManager = () => {
     setFormData({
       user_id: booking.user_id || '',
       owner_id: booking.owner_id || '',
+      boat_id: booking.boat_id || '',
+      product_id: booking.product_id || '',
       start_time: booking.start_time || '09:00',
       end_time: booking.end_time || '18:00',
-      booking_date: booking.booking_date ? 
-        booking.booking_date.split('.').reverse().join('-') : 
-        new Date().toISOString().split('T')[0],
+      booking_date: booking.booking_date || new Date().toISOString().split('T')[0],
+      quantity: booking.quantity || 1,
+      price: booking.price || '',
       status: booking.status || 'бронь'
     });
     setShowEditForm(true);
@@ -282,7 +317,15 @@ const BookingsManager = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          user_id: parseInt(formData.user_id),
+          owner_id: parseInt(formData.owner_id),
+          boat_id: parseInt(formData.boat_id),
+          product_id: formData.product_id ? parseInt(formData.product_id) : null,
+          quantity: parseInt(formData.quantity),
+          price: formData.price ? parseFloat(formData.price) : null
+        })
       });
       
       const text = await response.text();
@@ -359,9 +402,13 @@ const BookingsManager = () => {
     setFormData({
       user_id: '',
       owner_id: '',
+      boat_id: '',
+      product_id: '',
       start_time: '09:00',
       end_time: '18:00',
       booking_date: new Date().toISOString().split('T')[0],
+      quantity: 1,
+      price: '',
       status: 'бронь'
     });
   };
@@ -372,6 +419,8 @@ const BookingsManager = () => {
       (booking.user_name && booking.user_name.toLowerCase().includes(search.toLowerCase())) ||
       (booking.owner_name && booking.owner_name.toLowerCase().includes(search.toLowerCase())) ||
       (booking.user_email && booking.user_email.toLowerCase().includes(search.toLowerCase())) ||
+      (booking.boat_name && booking.boat_name.toLowerCase().includes(search.toLowerCase())) ||
+      (booking.product_name && booking.product_name.toLowerCase().includes(search.toLowerCase())) ||
       booking.id_booking.toString().includes(search) ||
       (booking.booking_date && booking.booking_date.includes(search));
     
@@ -400,7 +449,7 @@ const BookingsManager = () => {
 
   // Получение сегодняшних бронирований
   const todayBookings = bookings.filter(booking => {
-    const today = new Date().toLocaleDateString('ru-RU');
+    const today = new Date().toISOString().split('T')[0];
     return booking.booking_date === today;
   });
 
@@ -562,6 +611,9 @@ const BookingsManager = () => {
                   <th>Длительность</th>
                   <th>Клиент</th>
                   <th>Владелец</th>
+                  <th>Лодка</th>
+                  <th>Товар</th>
+                  <th>Цена</th>
                   <th>Статус</th>
                   <th>Создано</th>
                   <th>Действия</th>
@@ -598,6 +650,20 @@ const BookingsManager = () => {
                           <div className="owner-email">{booking.owner_email}</div>
                         )}
                       </div>
+                    </td>
+                    <td className="booking-boat">
+                      <div className="boat-info">
+                        <div className="boat-name">{booking.boat_name || '—'}</div>
+                        {booking.boat_id && (
+                          <div className="boat-id">#{booking.boat_id}</div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="booking-product">
+                      {booking.product_name || '—'}
+                    </td>
+                    <td className="booking-price">
+                      {booking.price ? `${booking.price} ₽` : '—'}
                     </td>
                     <td className="booking-status">
                       <select
@@ -713,6 +779,66 @@ const BookingsManager = () => {
                         <option disabled>Загрузка владельцев...</option>
                       )}
                     </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="boat_id">Лодка *</label>
+                    <select
+                      id="boat_id"
+                      value={formData.boat_id}
+                      onChange={(e) => setFormData({...formData, boat_id: e.target.value})}
+                      required
+                    >
+                      <option value="">Выберите лодку</option>
+                      {boats.map(boat => (
+                        <option key={boat.id_boat} value={boat.id_boat}>
+                          {boat.name || `Лодка #${boat.id_boat}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="product_id">Товар (опционально)</label>
+                    <select
+                      id="product_id"
+                      value={formData.product_id}
+                      onChange={(e) => setFormData({...formData, product_id: e.target.value})}
+                    >
+                      <option value="">Без товара</option>
+                      {products.map(product => (
+                        <option key={product.id_product} value={product.id_product}>
+                          {product.name || `Товар #${product.id_product}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="quantity">Количество</label>
+                    <input
+                      type="number"
+                      id="quantity"
+                      min="1"
+                      value={formData.quantity}
+                      onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="price">Цена (₽)</label>
+                    <input
+                      type="number"
+                      id="price"
+                      min="0"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    />
                   </div>
                 </div>
                 
@@ -883,6 +1009,66 @@ const BookingsManager = () => {
                         <option disabled>Загрузка владельцев...</option>
                       )}
                     </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit_boat_id">Лодка *</label>
+                    <select
+                      id="edit_boat_id"
+                      value={formData.boat_id}
+                      onChange={(e) => setFormData({...formData, boat_id: e.target.value})}
+                      required
+                    >
+                      <option value="">Выберите лодку</option>
+                      {boats.map(boat => (
+                        <option key={boat.id_boat} value={boat.id_boat}>
+                          {boat.name || `Лодка #${boat.id_boat}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="edit_product_id">Товар (опционально)</label>
+                    <select
+                      id="edit_product_id"
+                      value={formData.product_id}
+                      onChange={(e) => setFormData({...formData, product_id: e.target.value})}
+                    >
+                      <option value="">Без товара</option>
+                      {products.map(product => (
+                        <option key={product.id_product} value={product.id_product}>
+                          {product.name || `Товар #${product.id_product}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit_quantity">Количество</label>
+                    <input
+                      type="number"
+                      id="edit_quantity"
+                      min="1"
+                      value={formData.quantity}
+                      onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="edit_price">Цена (₽)</label>
+                    <input
+                      type="number"
+                      id="edit_price"
+                      min="0"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    />
                   </div>
                 </div>
                 

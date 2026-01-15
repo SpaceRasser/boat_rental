@@ -71,9 +71,12 @@ class PaymentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
+            'booking_id' => 'nullable|exists:bookings,id_booking',
             'user_id' => 'required|exists:users,id_user',
             'amount' => 'required|numeric|min:0',
             'payment_date' => 'required|date',
+            'payment_method' => 'nullable|string|max:50',
+            'status' => 'nullable|string|max:50',
         ]);
 
         $payment = Payment::create($request->all());
