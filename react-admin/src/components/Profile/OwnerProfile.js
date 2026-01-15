@@ -5,8 +5,12 @@ import './Profile.css';
 const OwnerProfile = ({ user, onUpdate }) => {
   const [activeTab, setActiveTab] = useState('services');
   const [services, setServices] = useState([]);
+  const [scheduleBookings, setScheduleBookings] = useState([]);
+  const [ownerId, setOwnerId] = useState(null);
   const [showAddService, setShowAddService] = useState(false);
+  const [showEditService, setShowEditService] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
   const [formData, setFormData] = useState({
     name: user.name,
     email: user.email,
@@ -17,22 +21,62 @@ const OwnerProfile = ({ user, onUpdate }) => {
     description: '',
     price: ''
   });
+  const [editServiceForm, setEditServiceForm] = useState({
+    name: '',
+    description: '',
+    price: ''
+  });
+
+  useEffect(() => {
+    fetchOwnerId();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'services') {
       fetchServices();
     }
-  }, [activeTab]);
+    if (activeTab === 'schedule') {
+      fetchSchedule();
+    }
+  }, [activeTab, ownerId]);
+
+  const fetchOwnerId = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/owners/get.php`);
+      const data = await response.json();
+      const owners = data.data?.owners || data.owners || data.data || [];
+      const ownerMatch = owners.find(owner => owner.email === user.email);
+      if (ownerMatch) {
+        setOwnerId(ownerMatch.id_owner);
+      }
+    } catch (error) {
+      console.error('Error fetching owner id:', error);
+    }
+  };
 
   const fetchServices = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/boats/get.php`);
       const data = await response.json();
       if (data.success) {
-        setServices(data.data.boats || []);
+        const boats = data.data.boats || [];
+        setServices(ownerId ? boats.filter(boat => boat.owner_id === ownerId) : boats);
       }
     } catch (error) {
       console.error('Error fetching services:', error);
+    }
+  };
+
+  const fetchSchedule = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/booking/get.php`);
+      const data = await response.json();
+      if (data.success) {
+        const bookings = data.data.bookings || [];
+        setScheduleBookings(ownerId ? bookings.filter(booking => booking.owner_id === ownerId) : bookings);
+      }
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
     }
   };
 
@@ -46,6 +90,7 @@ const OwnerProfile = ({ user, onUpdate }) => {
           name: serviceForm.name,
           description: serviceForm.description,
           price: serviceForm.price,
+          owner_id: ownerId,
           user_email: user.email,
           user_name: user.name
         })
@@ -62,6 +107,48 @@ const OwnerProfile = ({ user, onUpdate }) => {
       }
     } catch (error) {
       alert('Ошибка добавления услуги');
+    }
+  };
+
+  const handleEditService = (service) => {
+    setSelectedService(service);
+    setEditServiceForm({
+      name: service.name || '',
+      description: service.description || '',
+      price: service.price || ''
+    });
+    setShowEditService(true);
+  };
+
+  const handleUpdateService = async (e) => {
+    e.preventDefault();
+    if (!selectedService) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/boats/update.php?id=${selectedService.id_boat}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editServiceForm.name,
+          description: editServiceForm.description,
+          price: editServiceForm.price,
+          owner_id: ownerId,
+          user_email: user.email,
+          user_name: user.name
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert('Услуга обновлена!');
+        setShowEditService(false);
+        setSelectedService(null);
+        fetchServices();
+      } else {
+        alert('Ошибка: ' + data.error);
+      }
+    } catch (error) {
+      alert('Ошибка обновления услуги');
     }
   };
 
@@ -190,8 +277,63 @@ const OwnerProfile = ({ user, onUpdate }) => {
                   <div className="service-info">
                     <span>💰 {service.price || '0'} руб/день</span>
                   </div>
+                  <button
+                    className="edit-button"
+                    onClick={() => handleEditService(service)}
+                  >
+                    Редактировать
+                  </button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {showEditService && selectedService && (
+          <div className="modal-overlay">
+            <div className="modal">
+              <div className="modal-header">
+                <h3>Редактировать услугу</h3>
+                <button onClick={() => setShowEditService(false)}>✕</button>
+              </div>
+              <form onSubmit={handleUpdateService}>
+                <div className="form-group">
+                  <label>Название</label>
+                  <input
+                    type="text"
+                    value={editServiceForm.name}
+                    onChange={(e) => setEditServiceForm({...editServiceForm, name: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Описание</label>
+                  <textarea
+                    value={editServiceForm.description}
+                    onChange={(e) => setEditServiceForm({...editServiceForm, description: e.target.value})}
+                    rows="4"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Цена (руб/день)</label>
+                  <input
+                    type="number"
+                    value={editServiceForm.price}
+                    onChange={(e) => setEditServiceForm({...editServiceForm, price: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-buttons">
+                  <button type="submit" className="save-button">Сохранить</button>
+                  <button
+                    type="button"
+                    className="cancel-button"
+                    onClick={() => setShowEditService(false)}
+                  >
+                    Отмена
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
@@ -199,10 +341,22 @@ const OwnerProfile = ({ user, onUpdate }) => {
         {activeTab === 'schedule' && (
           <div className="schedule-section">
             <h2>Расписание</h2>
-            <p>Здесь будет отображаться расписание ваших услуг</p>
-            <div className="coming-soon">
-              <p>Функционал расписания в разработке</p>
-            </div>
+            {scheduleBookings.length === 0 ? (
+              <p>Пока нет бронирований по вашим услугам.</p>
+            ) : (
+              <div className="bookings-list">
+                {scheduleBookings.map(booking => (
+                  <div key={booking.id_booking} className="booking-card">
+                    <h3>Бронь #{booking.id_booking}</h3>
+                    <p>Лодка: {booking.boat_name || '—'}</p>
+                    <p>Клиент: {booking.user_name || '—'}</p>
+                    <p>Дата: {booking.booking_date}</p>
+                    <p>Время: {booking.start_time} – {booking.end_time}</p>
+                    <p>Статус: {booking.status}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

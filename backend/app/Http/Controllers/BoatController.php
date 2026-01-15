@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Boat;
+use App\Models\Owner;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -31,6 +32,7 @@ class BoatController extends Controller
                     'available_days' => $boat->available_days,
                     'available_time_start' => $boat->available_time_start,
                     'available_time_end' => $boat->available_time_end,
+                    'owner_id' => $boat->owner_id,
                     'created_at' => $boat->created_at->format('d.m.Y H:i'),
                 ];
             });
@@ -65,7 +67,18 @@ class BoatController extends Controller
             'available_time_start' => 'nullable|string',
             'available_time_end' => 'nullable|string',
             'owner_id' => 'nullable|exists:owners,id_owner',
+            'user_email' => 'nullable|email',
+            'user_name' => 'nullable|string',
         ]);
+
+        $ownerId = $request->owner_id;
+        if (!$ownerId && $request->user_email) {
+            $owner = Owner::firstOrCreate(
+                ['email' => $request->user_email],
+                ['name' => $request->user_name ?? $request->user_email]
+            );
+            $ownerId = $owner->id_owner;
+        }
 
         $boat = Boat::create([
             'name' => $request->name,
@@ -78,7 +91,7 @@ class BoatController extends Controller
             'available_days' => $request->available_days ?? 'Понедельник,Вторник,Среда,Четверг,Пятница,Суббота,Воскресенье',
             'available_time_start' => $request->available_time_start ?? '09:00',
             'available_time_end' => $request->available_time_end ?? '18:00',
-            'owner_id' => $request->owner_id,
+            'owner_id' => $ownerId,
         ]);
 
         return response()->json([
@@ -95,6 +108,7 @@ class BoatController extends Controller
                 'available_days' => $boat->available_days,
                 'available_time_start' => $boat->available_time_start,
                 'available_time_end' => $boat->available_time_end,
+                'owner_id' => $boat->owner_id,
                 'created_at' => $boat->created_at->format('d.m.Y H:i'),
             ]
         ], 201);
@@ -132,13 +146,24 @@ class BoatController extends Controller
             'available_time_start' => 'nullable|string',
             'available_time_end' => 'nullable|string',
             'owner_id' => 'nullable|exists:owners,id_owner',
+            'user_email' => 'nullable|email',
+            'user_name' => 'nullable|string',
         ]);
 
-        $boat->update($request->only([
+        $ownerId = $request->owner_id;
+        if (!$ownerId && $request->user_email) {
+            $owner = Owner::firstOrCreate(
+                ['email' => $request->user_email],
+                ['name' => $request->user_name ?? $request->user_email]
+            );
+            $ownerId = $owner->id_owner;
+        }
+
+        $boat->update(array_filter(array_merge($request->only([
             'name', 'description', 'image_url', 'available', 'quantity',
             'price', 'price_discount', 'available_days',
-            'available_time_start', 'available_time_end', 'owner_id'
-        ]));
+            'available_time_start', 'available_time_end'
+        ]), ['owner_id' => $ownerId]), fn ($value) => $value !== null));
 
         return response()->json([
             'success' => true,
@@ -154,6 +179,7 @@ class BoatController extends Controller
                 'available_days' => $boat->available_days,
                 'available_time_start' => $boat->available_time_start,
                 'available_time_end' => $boat->available_time_end,
+                'owner_id' => $boat->owner_id,
                 'created_at' => $boat->created_at->format('d.m.Y H:i'),
             ]
         ]);

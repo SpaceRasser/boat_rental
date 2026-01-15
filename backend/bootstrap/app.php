@@ -19,19 +19,4 @@ $app->singleton(
     App\Exceptions\Handler::class
 );
 
-// Register core service providers
-$app->register(Illuminate\Validation\ValidationServiceProvider::class);
-$app->register(Illuminate\View\ViewServiceProvider::class);
-$app->register(Illuminate\Translation\TranslationServiceProvider::class);
-$app->register(Illuminate\Database\DatabaseServiceProvider::class);
-$app->register(Illuminate\Filesystem\FilesystemServiceProvider::class);
-$app->register(Illuminate\Foundation\Providers\FoundationServiceProvider::class);
-$app->register(Illuminate\Routing\RoutingServiceProvider::class);
-$app->register(Illuminate\Http\HttpServiceProvider::class);
-$app->register(Illuminate\Session\SessionServiceProvider::class);
-
-// Register app service providers
-$app->register(App\Providers\AppServiceProvider::class);
-$app->register(App\Providers\RouteServiceProvider::class);
-
 return $app;
