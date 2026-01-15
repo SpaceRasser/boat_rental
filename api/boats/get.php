@@ -19,6 +19,7 @@ try {
             price,
             price_discount,
             available_days,
+            owner_id,
             TIME_FORMAT(available_time_start, '%H:%i') as available_time_start,
             TIME_FORMAT(available_time_end, '%H:%i') as available_time_end,
             DATE_FORMAT(created_at, '%d.%m.%Y %H:%i') as created_at

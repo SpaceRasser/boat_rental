@@ -23,7 +23,7 @@ const OwnersManager = () => {
   console.log('Начало загрузки арендодателей...');
   setLoading(true);
   try {
-    const response = await fetch('http://localhost/boat_rental/api/owners/get.php');
+    const response = await fetch('http://localhost:8080/api/owners/get.php');
     console.log('Ответ получен, статус:', response.status);
     
     const text = await response.text();
@@ -104,7 +104,7 @@ const OwnersManager = () => {
     }
 
     try {
-      const response = await fetch('http://localhost/boat_rental/api/owners/create.php', {
+      const response = await fetch('http://localhost:8080/api/owners/create.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -174,7 +174,7 @@ const OwnersManager = () => {
         updateData.password = formData.password;
       }
 
-      const response = await fetch(`http://localhost/boat_rental/api/owners/update.php?id=${selectedOwner.id_owner}`, {
+      const response = await fetch(`http://localhost:8080/api/owners/update.php?id=${selectedOwner.id_owner}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -207,7 +207,7 @@ const OwnersManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/owners/delete.php?id=${id}`, {
+      const response = await fetch(`http://localhost:8080/api/owners/delete.php?id=${id}`, {
         method: 'DELETE'
       });
       

@@ -48,7 +48,7 @@ const BoatManager = () => {
   const fetchBoats = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost/boat_rental/api/boats/get.php');
+      const response = await fetch('http://localhost:8080/api/boats/get.php');
       const data = await response.json();
       
       if (data.success) {
@@ -92,7 +92,7 @@ const BoatManager = () => {
     }
 
     try {
-      const response = await fetch('http://localhost/boat_rental/api/boats/create.php', {
+      const response = await fetch('http://localhost:8080/api/boats/create.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +144,7 @@ const BoatManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/boats/update.php?id=${selectedBoat.id_boat}`, {
+      const response = await fetch(`http://localhost:8080/api/boats/update.php?id=${selectedBoat.id_boat}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ const BoatManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/boats/delete.php?id=${id}`, {
+      const response = await fetch(`http://localhost:8080/api/boats/delete.php?id=${id}`, {
         method: 'DELETE'
       });
       

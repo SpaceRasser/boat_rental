@@ -83,6 +83,20 @@ const ClientProfile = ({ user, onUpdate }) => {
   };
 
   const handleCreateBooking = async (boatId) => {
+    // Находим лодку в списке услуг
+    const boat = services.find(service => service.id_boat == boatId);
+    
+    if (!boat) {
+      alert('Ошибка: Лодка не найдена');
+      return;
+    }
+
+    // Проверяем наличие owner_id у лодки
+    if (!boat.owner_id) {
+      alert('Ошибка: У этой лодки не указан владелец. Невозможно создать бронирование.');
+      return;
+    }
+
     const bookingDate = prompt('Введите дату бронирования (YYYY-MM-DD):');
     const startTime = prompt('Введите время начала (HH:MM):');
     const endTime = prompt('Введите время окончания (HH:MM):');
@@ -95,7 +109,7 @@ const ClientProfile = ({ user, onUpdate }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: user.id_user,
-          boat_id: boatId,
+          owner_id: boat.owner_id,
           booking_date: bookingDate,
           start_time: startTime,
           end_time: endTime
@@ -110,7 +124,7 @@ const ClientProfile = ({ user, onUpdate }) => {
         alert('Ошибка: ' + data.error);
       }
     } catch (error) {
-      alert('Ошибка создания бронирования');
+      alert('Ошибка создания бронирования: ' + error.message);
     }
   };
 
@@ -142,7 +156,9 @@ const ClientProfile = ({ user, onUpdate }) => {
           <div className="services-section">
             <h2>Доступные услуги</h2>
             <div className="services-grid">
-              {services.map(service => (
+              {services
+                .filter(service => service.owner_id) // Показываем только лодки с владельцем
+                .map(service => (
                 <div key={service.id_boat} className="service-card">
                   <h3>{service.name || 'Лодка #' + service.id_boat}</h3>
                   <p>{service.description || 'Описание отсутствует'}</p>
@@ -157,6 +173,9 @@ const ClientProfile = ({ user, onUpdate }) => {
                   </button>
                 </div>
               ))}
+              {services.filter(service => service.owner_id).length === 0 && (
+                <p>Нет доступных услуг для бронирования</p>
+              )}
             </div>
           </div>
         )}

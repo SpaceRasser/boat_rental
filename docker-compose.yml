@@ -1,4 +1,5 @@
 version: '3.8'
+name: "fff"
 
 services:
   # MySQL база данных

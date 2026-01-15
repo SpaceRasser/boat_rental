@@ -28,11 +28,9 @@ try {
     
     // Проверяем, есть ли активные бронирования у этого владельца
     $bookingsCheck = $conn->prepare("
-        SELECT b.id_booking
-        FROM bookings b
-        INNER JOIN boats bt ON b.boat_id = bt.id_boat
-        WHERE bt.owner_id = ?
-        AND b.status NOT IN ('отменена', 'завершена')
+        SELECT id_booking FROM bookings 
+        WHERE owner_id = ? 
+        AND status NOT IN ('отменена', 'завершена')
     ");
     $bookingsCheck->execute([$ownerId]);
     

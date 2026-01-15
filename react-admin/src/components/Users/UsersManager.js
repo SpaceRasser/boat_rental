@@ -22,7 +22,7 @@ const UsersManager = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost/boat_rental/api/users/get.php');
+      const response = await fetch('http://localhost:8080/api/users/get.php');
       const data = await response.json();
       if (data.success) {
         setUsers(data.data.users || []);
@@ -55,7 +55,7 @@ const UsersManager = () => {
   try {
     console.log('Отправляю данные:', formData);
     
-    const response = await fetch('http://localhost/boat_rental/api/users/create.php', {
+    const response = await fetch('http://localhost:8080/api/users/create.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ const UsersManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/users/delete.php?id=${id}`, {
+      const response = await fetch(`http://localhost:8080/api/users/delete.php?id=${id}`, {
         method: 'DELETE'
       });
       
@@ -161,7 +161,7 @@ const UsersManager = () => {
     console.log('Отправляю данные обновления:', updateData);
     
     // Пробуем простой вариант API (используем POST вместо PUT)
-    const response = await fetch('http://localhost/boat_rental/api/users/update_simple.php', {
+    const response = await fetch('http://localhost:8080/api/users/update_simple.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

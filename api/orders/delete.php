@@ -17,24 +17,26 @@ if ($orderId <= 0) {
 
 try {
     $conn = getConnection();
-
-    $checkStmt = $conn->prepare("SELECT id_booking FROM bookings WHERE id_booking = :id");
+    
+    // Проверяем существование заказа
+    $checkStmt = $conn->prepare("SELECT id_order FROM boat_orders WHERE id_order = :id");
     $checkStmt->bindParam(':id', $orderId, PDO::PARAM_INT);
     $checkStmt->execute();
-
+    
     if (!$checkStmt->fetch()) {
         sendError('Order not found', 404);
     }
-
-    $stmt = $conn->prepare("UPDATE bookings SET status = 'отменена' WHERE id_booking = :id");
+    
+    // Удаляем заказ
+    $stmt = $conn->prepare("DELETE FROM boat_orders WHERE id_order = :id");
     $stmt->bindParam(':id', $orderId, PDO::PARAM_INT);
-
+    
     if ($stmt->execute()) {
         sendResponse(['message' => 'Order deleted successfully', 'id' => $orderId]);
     } else {
         sendError('Failed to delete order');
     }
-
+    
 } catch(PDOException $e) {
     sendError('Database error: ' . $e->getMessage(), 500);
 }

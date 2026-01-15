@@ -54,7 +54,7 @@ const OrdersManager = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost/boat_rental/api/orders/get.php');
+      const response = await fetch('http://localhost:8080/api/orders/get.php');
       const data = await response.json();
       
       if (data.success) {
@@ -72,7 +72,7 @@ const OrdersManager = () => {
 
   const fetchBoats = async () => {
     try {
-      const response = await fetch('http://localhost/boat_rental/api/boats/get.php');
+      const response = await fetch('http://localhost:8080/api/boats/get.php');
       const data = await response.json();
       
       if (data.success) {
@@ -85,7 +85,7 @@ const OrdersManager = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://localhost/boat_rental/api/products/get.php');
+      const response = await fetch('http://localhost:8080/api/products/get.php');
       const data = await response.json();
       
       if (data.success) {
@@ -126,7 +126,7 @@ const OrdersManager = () => {
     }
 
     try {
-      const response = await fetch('http://localhost/boat_rental/api/orders/create.php', {
+      const response = await fetch('http://localhost:8080/api/orders/create.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ const OrdersManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/orders/update.php?id=${selectedOrder.id_order}`, {
+      const response = await fetch(`http://localhost:8080/api/orders/update.php?id=${selectedOrder.id_order}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -210,7 +210,7 @@ const OrdersManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/orders/delete.php?id=${id}`, {
+      const response = await fetch(`http://localhost:8080/api/orders/delete.php?id=${id}`, {
         method: 'DELETE'
       });
       
@@ -232,7 +232,7 @@ const OrdersManager = () => {
   // ========== ИЗМЕНЕНИЕ СТАТУСА ==========
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/orders/update.php?id=${orderId}`, {
+      const response = await fetch(`http://localhost:8080/api/orders/update.php?id=${orderId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

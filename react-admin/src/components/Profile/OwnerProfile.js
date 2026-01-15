@@ -45,10 +45,9 @@ const OwnerProfile = ({ user, onUpdate }) => {
         body: JSON.stringify({
           name: serviceForm.name,
           description: serviceForm.description,
-          price: serviceForm.price
-          // owner_id временно не отправляем, чтобы избежать FK-ошибок.
-          // Связь услуги с конкретным арендодателем можно будет
-          // донастроить через отдельную таблицу или поле позже.
+          price: serviceForm.price,
+          user_email: user.email,
+          user_name: user.name
         })
       });
 

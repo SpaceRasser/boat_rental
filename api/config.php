@@ -59,12 +59,10 @@ function ensureTablesExist($conn, $dbname) {
         $stmt = $conn->query("SHOW TABLES");
         $existingTables = $stmt->fetchAll(PDO::FETCH_COLUMN);
         
-        $requiredTables = ['users', 'owners', 'boats', 'products', 'bookings', 'booking_items', 'payments'];
+        $requiredTables = ['users', 'owners', 'boats', 'products', 'boat_orders', 'bookings', 'payments'];
         $missingTables = array_diff($requiredTables, $existingTables);
         
         if (empty($missingTables)) {
-            ensureBookingsSchema($conn, $dbname);
-            createTableBookingItems($conn);
             $tablesChecked = true;
             return;
         }
@@ -74,9 +72,8 @@ function ensureTablesExist($conn, $dbname) {
         createTableOwners($conn);
         createTableBoats($conn);
         createTableProducts($conn);
+        createTableBoatOrders($conn);
         createTableBookings($conn);
-        ensureBookingsSchema($conn, $dbname);
-        createTableBookingItems($conn);
         createTablePayments($conn);
         
         $tablesChecked = true;
@@ -152,85 +149,45 @@ function createTableProducts($conn) {
     $conn->exec($sql);
 }
 
-function createTableBookings($conn) {
-    $sql = "CREATE TABLE IF NOT EXISTS bookings (
-        id_booking INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
+function createTableBoatOrders($conn) {
+    $sql = "CREATE TABLE IF NOT EXISTS boat_orders (
+        id_order INT AUTO_INCREMENT PRIMARY KEY,
         boat_id INT NOT NULL,
-        booking_date DATE NOT NULL,
-        start_time TIME NOT NULL,
-        end_time TIME NOT NULL,
-        status VARCHAR(50) DEFAULT 'бронь',
-        amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_user (user_id),
-        INDEX idx_boat (boat_id),
-        INDEX idx_date (booking_date),
-        INDEX idx_status (status),
-        INDEX idx_boat_date (boat_id, booking_date),
-        FOREIGN KEY (user_id) REFERENCES users(id_user) ON DELETE CASCADE,
-        FOREIGN KEY (boat_id) REFERENCES boats(id_boat) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-    $conn->exec($sql);
-}
-
-function ensureBookingsSchema($conn, $dbname) {
-    $columnsStmt = $conn->prepare("
-        SELECT COLUMN_NAME
-        FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_SCHEMA = :schema
-          AND TABLE_NAME = 'bookings'
-    ");
-    $columnsStmt->execute([':schema' => $dbname]);
-    $existingColumns = $columnsStmt->fetchAll(PDO::FETCH_COLUMN);
-
-    if (!in_array('boat_id', $existingColumns, true)) {
-        $conn->exec("ALTER TABLE bookings ADD COLUMN boat_id INT NULL");
-    }
-
-    if (!in_array('amount', $existingColumns, true)) {
-        $conn->exec("ALTER TABLE bookings ADD COLUMN amount DECIMAL(10, 2) NOT NULL DEFAULT 0");
-    }
-
-    if (!in_array('booking_date', $existingColumns, true)) {
-        $conn->exec("ALTER TABLE bookings ADD COLUMN booking_date DATE NULL");
-    }
-
-    $indexesStmt = $conn->prepare("
-        SELECT INDEX_NAME
-        FROM INFORMATION_SCHEMA.STATISTICS
-        WHERE TABLE_SCHEMA = :schema
-          AND TABLE_NAME = 'bookings'
-    ");
-    $indexesStmt->execute([':schema' => $dbname]);
-    $existingIndexes = $indexesStmt->fetchAll(PDO::FETCH_COLUMN);
-
-    if (!in_array('idx_boat', $existingIndexes, true)) {
-        $conn->exec("CREATE INDEX idx_boat ON bookings (boat_id)");
-    }
-
-    if (!in_array('idx_date', $existingIndexes, true)) {
-        $conn->exec("CREATE INDEX idx_date ON bookings (booking_date)");
-    }
-
-    if (!in_array('idx_boat_date', $existingIndexes, true)) {
-        $conn->exec("CREATE INDEX idx_boat_date ON bookings (boat_id, booking_date)");
-    }
-}
-
-function createTableBookingItems($conn) {
-    $sql = "CREATE TABLE IF NOT EXISTS booking_items (
-        id_booking_item INT AUTO_INCREMENT PRIMARY KEY,
-        booking_id INT NOT NULL,
         product_id INT NULL,
+        status VARCHAR(50) DEFAULT 'ожидание',
+        available BOOLEAN DEFAULT TRUE,
+        available_days VARCHAR(255) DEFAULT 'Понедельник,Вторник,Среда,Четверг,Пятница,Суббота,Воскресенье',
+        available_time_start TIME DEFAULT '09:00:00',
+        available_time_end TIME DEFAULT '18:00:00',
         quantity INT DEFAULT 1,
         price DECIMAL(10, 2) NOT NULL,
         price_discount DECIMAL(10, 2) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_booking (booking_id),
+        INDEX idx_boat (boat_id),
         INDEX idx_product (product_id),
-        FOREIGN KEY (booking_id) REFERENCES bookings(id_booking) ON DELETE CASCADE,
+        INDEX idx_status (status),
+        FOREIGN KEY (boat_id) REFERENCES boats(id_boat) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id_product) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+    $conn->exec($sql);
+}
+
+function createTableBookings($conn) {
+    $sql = "CREATE TABLE IF NOT EXISTS bookings (
+        id_booking INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        owner_id INT NOT NULL,
+        start_time TIME NOT NULL,
+        end_time TIME NOT NULL,
+        booking_date DATE NOT NULL,
+        status VARCHAR(50) DEFAULT 'бронь',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user (user_id),
+        INDEX idx_owner (owner_id),
+        INDEX idx_date (booking_date),
+        INDEX idx_status (status),
+        FOREIGN KEY (user_id) REFERENCES users(id_user) ON DELETE CASCADE,
+        FOREIGN KEY (owner_id) REFERENCES owners(id_owner) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
     $conn->exec($sql);
 }

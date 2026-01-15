@@ -43,7 +43,7 @@ const PaymentsManager = () => {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost/boat_rental/api/paymants/get.php');
+      const response = await fetch('http://localhost:8080/api/paymants/get.php');
       const text = await response.text();
       console.log('Raw response:', text);
       
@@ -66,7 +66,7 @@ const PaymentsManager = () => {
   const fetchUsersAndBookings = async () => {
     try {
       // Загружаем пользователей
-      const usersResponse = await fetch('http://localhost/boat_rental/api/users/get.php');
+      const usersResponse = await fetch('http://localhost:8080/api/users/get.php');
       const usersText = await usersResponse.text();
       console.log('Users raw:', usersText);
       
@@ -78,7 +78,7 @@ const PaymentsManager = () => {
       }
       
       // Загружаем бронирования
-      const bookingsResponse = await fetch('http://localhost/boat_rental/api/bookings/get.php');
+      const bookingsResponse = await fetch('http://localhost:8080/api/bookings/get.php');
       const bookingsText = await bookingsResponse.text();
       console.log('Bookings raw:', bookingsText);
       
@@ -131,7 +131,7 @@ const PaymentsManager = () => {
     }
 
     try {
-      const response = await fetch('http://localhost/boat_rental/api/paymants/create.php', {
+      const response = await fetch('http://localhost:8080/api/paymants/create.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -191,7 +191,7 @@ const PaymentsManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/paymants/update.php?id=${selectedPayment.id_payment}`, {
+      const response = await fetch(`http://localhost:8080/api/paymants/update.php?id=${selectedPayment.id_payment}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -231,7 +231,7 @@ const PaymentsManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/paymants/delete.php?id=${id}`, {
+      const response = await fetch(`http://localhost:8080/api/paymants/delete.php?id=${id}`, {
         method: 'DELETE'
       });
       
@@ -253,7 +253,7 @@ const PaymentsManager = () => {
   // ========== ИЗМЕНЕНИЕ СТАТУСА ==========
   const handleStatusChange = async (paymentId, newStatus) => {
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/paymants/update.php?id=${paymentId}`, {
+      const response = await fetch(`http://localhost:8080/api/paymants/update.php?id=${paymentId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

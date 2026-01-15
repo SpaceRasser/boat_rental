@@ -27,14 +27,41 @@ try {
     $available_time_start = isset($data['available_time_start']) ? trim($data['available_time_start']) : '09:00';
     $available_time_end = isset($data['available_time_end']) ? trim($data['available_time_end']) : '18:00';
     
-    // owner_id - опционально, только если передан и существует в таблице owners
+    // Определяем owner_id
     $owner_id = null;
+    
+    // Если owner_id передан напрямую
     if (!empty($data['owner_id'])) {
         $ownerId = intval($data['owner_id']);
         $checkOwner = $conn->prepare("SELECT id_owner FROM owners WHERE id_owner = ?");
         $checkOwner->execute([$ownerId]);
         if ($checkOwner->fetch()) {
             $owner_id = $ownerId;
+        }
+    }
+    // Если передан email пользователя, ищем или создаем владельца
+    elseif (!empty($data['user_email'])) {
+        $userEmail = trim($data['user_email']);
+        
+        // Ищем владельца по email
+        $findOwner = $conn->prepare("SELECT id_owner FROM owners WHERE email = ?");
+        $findOwner->execute([$userEmail]);
+        $owner = $findOwner->fetch(PDO::FETCH_ASSOC);
+        
+        if ($owner) {
+            $owner_id = $owner['id_owner'];
+        } else {
+            // Если владельца нет, создаем его (если передан user_name)
+            if (!empty($data['user_name'])) {
+                $userName = trim($data['user_name']);
+                // Создаем владельца с тем же email и именем
+                $createOwner = $conn->prepare("INSERT INTO owners (name, email, password) VALUES (?, ?, ?)");
+                // Используем временный пароль (можно будет изменить позже)
+                $tempPassword = password_hash('temp_' . time(), PASSWORD_DEFAULT);
+                if ($createOwner->execute([$userName, $userEmail, $tempPassword])) {
+                    $owner_id = $conn->lastInsertId();
+                }
+            }
         }
     }
     
@@ -68,7 +95,7 @@ try {
         $boatStmt = $conn->prepare("
             SELECT 
                 id_boat, name, description, image_url, available, quantity,
-                price, price_discount, available_days,
+                price, price_discount, available_days, owner_id,
                 TIME_FORMAT(available_time_start, '%H:%i') as available_time_start,
                 TIME_FORMAT(available_time_end, '%H:%i') as available_time_end,
                 DATE_FORMAT(created_at, '%d.%m.%Y %H:%i') as created_at

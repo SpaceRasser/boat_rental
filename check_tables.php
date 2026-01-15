@@ -32,8 +32,8 @@ try {
         'owners',
         'boats',
         'products',
+        'boat_orders',
         'bookings',
-        'booking_items',
         'payments'
     ];
     

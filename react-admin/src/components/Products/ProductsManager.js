@@ -41,7 +41,7 @@ const ProductsManager = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost/boat_rental/api/products/get.php');
+      const response = await fetch('http://localhost:8080/api/products/get.php');
       const data = await response.json();
       
       if (data.success) {
@@ -85,7 +85,7 @@ const ProductsManager = () => {
     }
 
     try {
-      const response = await fetch('http://localhost/boat_rental/api/products/create.php', {
+      const response = await fetch('http://localhost:8080/api/products/create.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ const ProductsManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/products/update.php?id=${selectedProduct.id_product}`, {
+      const response = await fetch(`http://localhost:8080/api/products/update.php?id=${selectedProduct.id_product}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ const ProductsManager = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost/boat_rental/api/products/delete.php?id=${id}`, {
+      const response = await fetch(`http://localhost:8080/api/products/delete.php?id=${id}`, {
         method: 'DELETE'
       });
       

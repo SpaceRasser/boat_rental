@@ -74,42 +74,46 @@ CREATE TABLE IF NOT EXISTS products (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
--- ТАБЛИЦА 5: BOOKINGS (Заказы/Бронирования)
+-- ТАБЛИЦА 5: BOAT_ORDERS (Заказы лодок)
 -- ============================================
-CREATE TABLE IF NOT EXISTS bookings (
-    id_booking INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+CREATE TABLE IF NOT EXISTS boat_orders (
+    id_order INT AUTO_INCREMENT PRIMARY KEY,
     boat_id INT NOT NULL,
-    booking_date DATE NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    status VARCHAR(50) DEFAULT 'бронь',
-    amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_user (user_id),
-    INDEX idx_boat (boat_id),
-    INDEX idx_date (booking_date),
-    INDEX idx_status (status),
-    INDEX idx_boat_date (boat_id, booking_date),
-    FOREIGN KEY (user_id) REFERENCES users(id_user) ON DELETE CASCADE,
-    FOREIGN KEY (boat_id) REFERENCES boats(id_boat) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================
--- ТАБЛИЦА 6: BOOKING_ITEMS (Товары заказа)
--- ============================================
-CREATE TABLE IF NOT EXISTS booking_items (
-    id_booking_item INT AUTO_INCREMENT PRIMARY KEY,
-    booking_id INT NOT NULL,
     product_id INT NULL,
+    status VARCHAR(50) DEFAULT 'ожидание',
+    available BOOLEAN DEFAULT TRUE,
+    available_days VARCHAR(255) DEFAULT 'Понедельник,Вторник,Среда,Четверг,Пятница,Суббота,Воскресенье',
+    available_time_start TIME DEFAULT '09:00:00',
+    available_time_end TIME DEFAULT '18:00:00',
     quantity INT DEFAULT 1,
     price DECIMAL(10, 2) NOT NULL,
     price_discount DECIMAL(10, 2) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_booking (booking_id),
+    INDEX idx_boat (boat_id),
     INDEX idx_product (product_id),
-    FOREIGN KEY (booking_id) REFERENCES bookings(id_booking) ON DELETE CASCADE,
+    INDEX idx_status (status),
+    FOREIGN KEY (boat_id) REFERENCES boats(id_boat) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id_product) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- ТАБЛИЦА 6: BOOKINGS (Бронирования)
+-- ============================================
+CREATE TABLE IF NOT EXISTS bookings (
+    id_booking INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    owner_id INT NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    booking_date DATE NOT NULL,
+    status VARCHAR(50) DEFAULT 'бронь',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user (user_id),
+    INDEX idx_owner (owner_id),
+    INDEX idx_date (booking_date),
+    INDEX idx_status (status),
+    FOREIGN KEY (user_id) REFERENCES users(id_user) ON DELETE CASCADE,
+    FOREIGN KEY (owner_id) REFERENCES owners(id_owner) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
